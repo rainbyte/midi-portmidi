@@ -1,0 +1,48 @@
+name:                midi-portmidi
+version:             0.1.0.0
+synopsis:            Initial project template from stack
+description:         Please see README.md
+homepage:            https://github.com/rainbyte/midi-portmidi#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Alvaro Fernando García
+maintainer:          alvarofernandogarcia@gmail.com
+copyright:           2016 Alvaro Fernando García
+category:            Multimedia
+build-type:          Simple
+-- extra-source-files:
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Sound.MIDI.PortMidi
+  build-depends:       base >= 4.7 && < 5
+                     , midi
+                     , PortMidi
+  default-language:    Haskell2010
+
+executable midi-portmidi-exe
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base
+                     , event-list
+                     , midi
+                     , midi-portmidi
+                     , non-negative
+                     , PortMidi
+                     , time
+  default-language:    Haskell2010
+
+test-suite midi-portmidi-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       base
+                     , midi-portmidi
+  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/rainbyte/midi-portmidi
