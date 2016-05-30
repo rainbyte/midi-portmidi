@@ -2,7 +2,7 @@ module Sound.MIDI.PortMidi
   ( fromMessage
   ) where
 
-import           Data.Bits (shiftR, shiftL, (.|.), (.&.))
+import           Data.Bits (Bits, shiftR, shiftL, (.|.), (.&.))
 
 import qualified Sound.MIDI.Message as Msg
 import qualified Sound.MIDI.Message.Channel as Channel
@@ -13,6 +13,12 @@ import qualified Sound.MIDI.Message.System.Exclusive as SystemExclusive
 import qualified Sound.MIDI.Message.System.Common as SystemCommon
 import qualified Sound.MIDI.Message.System.RealTime as SystemRealTime
 import qualified Sound.PortMidi as PM
+
+hi7bit :: (Num a, Bits a) => a -> a
+hi7bit n = (n `shiftR` 7) .&. 0x7F
+
+lo7bit :: (Num a, Bits a) => a -> a
+lo7bit n = n .&. 0x7F
 
 -- toMessage :: PM.PMMsg -> Msg.T
 -- toMessage pmMsg = _
@@ -41,7 +47,7 @@ fromMessageChannel x = do
           Voice.MonoAftertouch pressure ->
             (0xD0, pressure, 0)
           Voice.PitchBend pitchBendRange ->
-            (0xE0, loByte pitchBendRange, hiByte pitchBendRange)
+            (0xE0, lo7bit pitchBendRange, hi7bit pitchBendRange)
         Channel.Mode y -> case y of
           Mode.AllSoundOff -> (0xB0, 0x78, 0)
           Mode.ResetAllControllers -> (0xB0, 0x79, 0x7F)
@@ -51,8 +57,8 @@ fromMessageChannel x = do
           Mode.MonoMode n -> (0xB0, 0x7E, n)
           Mode.PolyMode -> (0xB0, 0x7F, 0)
   PM.PMMsg (fromIntegral (status .|. (fromIntegral channel .&. 0xF)))
-           (fromIntegral data1)
-           (fromIntegral data2)
+           (fromIntegral data1 .&. 0x7F)
+           (fromIntegral data2 .&. 0x7F)
 
 fromMessageSystem :: System.T -> Maybe PM.PMMsg
 fromMessageSystem x = do
@@ -74,7 +80,7 @@ fromMessageSystem x = do
         --    HoursMS -> 0x7
             encTime = fromIntegral time .&. 0xF
         in Just (0xF1, (encType `shiftL` 4) .|. encTime, 0)
-      SystemCommon.SongPositionPointer n -> Just (0xF2, loByte n, hiByte n)
+      SystemCommon.SongPositionPointer n -> Just (0xF2, lo7bit n, hi7bit n)
       SystemCommon.SongSelect songNumber -> Just (0xF3, songNumber, 0)
       SystemCommon.TuneRequest -> Just (0xF6, 0, 0)
     System.RealTime y -> case y of
@@ -85,8 +91,5 @@ fromMessageSystem x = do
       SystemRealTime.ActiveSensing -> Just (0xFE, 0, 0)
       SystemRealTime.Reset -> Just (0xFF, 0, 0)
   pure $ PM.PMMsg (fromIntegral status)
-                  (fromIntegral data1)
-                  (fromIntegral data2)
-
-hiByte n = n `shiftR` 8
-loByte n = n .&. 0xFF
+                  (fromIntegral data1 .&. 0x7F)
+                  (fromIntegral data2 .&. 0x7F)
