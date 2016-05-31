@@ -30,6 +30,7 @@ executable midi-portmidi-exe
                      , midi
                      , midi-portmidi
                      , non-negative
+                     , optparse-applicative
                      , PortMidi
                      , time
   default-language:    Haskell2010

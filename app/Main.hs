@@ -5,6 +5,8 @@ import           Control.Concurrent
 import           Control.Monad
 import qualified Data.EventList.Relative.TimeBody as EventList
 import           Numeric.NonNegative.Wrapper (toNumber)
+import           Options.Applicative ((<>))
+import qualified Options.Applicative as Opt
 import qualified Sound.MIDI.File as MidiFile
 import qualified Sound.MIDI.File.Event as MidiFile.Event
 import qualified Sound.MIDI.File.Load as MidiFile.Load
@@ -13,6 +15,15 @@ import qualified Sound.PortMidi as PM
 import           System.Exit
 
 import           Sound.MIDI.PortMidi (fromMessage)
+
+data CliOptions = CliOptions
+  { filePath :: String }
+
+cliOptions :: Opt.Parser CliOptions
+cliOptions = CliOptions
+  <$> Opt.strOption (  Opt.long "file"
+                    <> Opt.metavar "FILE.MID"
+                    <> Opt.help "Midifile to reproduce" )
 
 fooBar :: MidiFile.T -> [(Rational, Maybe PM.PMMsg)]
 fooBar (MidiFile.Cons midiType division tracks) =
@@ -27,6 +38,7 @@ fooBar (MidiFile.Cons midiType division tracks) =
 
 main :: IO ()
 main = do
+  options <- Opt.execParser (Opt.info cliOptions mempty)
   _ <- PM.initialize
   deviceCount <- PM.countDevices
   putStrLn "Output devices:"
@@ -39,7 +51,7 @@ main = do
   eStream <- PM.openOutput selectedId 0
   case eStream of
     Left stream -> do
-      f <- MidiFile.Load.fromFile "/tmp/Flourish.mid"
+      f <- MidiFile.Load.fromFile (filePath options)
       let (MidiFile.Cons midiType division tracks) = f
           tracks' = fmap ( EventList.toPairList
                          . MidiFile.secondsFromTicks division) tracks
