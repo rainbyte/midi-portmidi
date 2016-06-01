@@ -30,12 +30,7 @@ lo7bit n = n .&. 0x7F
 
 fromMidiFileRelative :: MidiFile.T -> [(Rational, Either String PM.PMMsg)]
 fromMidiFileRelative (MidiFile.Cons midiType division tracks) =
-  let midiEvents = EventList.toPairList $
-        MidiFile.secondsFromTicks division $
-          MidiFile.mergeTracks midiType tracks
-      fromETimePair = first toNumber
-      timedEvents = fmap fromETimePair midiEvents
-  in fmap (second fromMidiFileEvent) timedEvents
+  fromTrack division $ MidiFile.mergeTracks midiType tracks
 
 fromTrack :: MidiFile.Division
           -> MidiFile.Track
