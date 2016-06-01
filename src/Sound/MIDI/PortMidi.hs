@@ -1,9 +1,17 @@
 module Sound.MIDI.PortMidi
   ( fromMessage
+  , fromMidiFileRelative
+  , fromTrack
   ) where
 
-import           Data.Bits (Bits, shiftR, shiftL, (.|.), (.&.))
+import           Control.Arrow (first, second)
 
+import           Data.Bits (Bits, shiftR, shiftL, (.|.), (.&.))
+import qualified Data.EventList.Relative.TimeBody as EventList
+import           Numeric.NonNegative.Wrapper (toNumber)
+
+import qualified Sound.MIDI.File as MidiFile
+import qualified Sound.MIDI.File.Event as MidiFileEvent
 import qualified Sound.MIDI.Message as Msg
 import qualified Sound.MIDI.Message.Channel as Channel
 import qualified Sound.MIDI.Message.Channel.Mode as Mode
@@ -19,6 +27,29 @@ hi7bit n = (n `shiftR` 7) .&. 0x7F
 
 lo7bit :: (Num a, Bits a) => a -> a
 lo7bit n = n .&. 0x7F
+
+fromMidiFileRelative :: MidiFile.T -> [(Rational, Either String PM.PMMsg)]
+fromMidiFileRelative (MidiFile.Cons midiType division tracks) =
+  let midiEvents = EventList.toPairList $
+        MidiFile.secondsFromTicks division $
+          MidiFile.mergeTracks midiType tracks
+      fromETimePair = first toNumber
+      timedEvents = fmap fromETimePair midiEvents
+  in fmap (second fromMidiFileEvent) timedEvents
+
+fromTrack :: MidiFile.Division
+          -> MidiFile.Track
+          -> [(Rational, Either String PM.PMMsg)]
+fromTrack division = fmap (first toNumber . second fromMidiFileEvent)
+                   . EventList.toPairList
+                   . MidiFile.secondsFromTicks division
+
+fromMidiFileEvent :: MidiFileEvent.T -> Either String PM.PMMsg
+fromMidiFileEvent x = case x of
+  MidiFileEvent.MIDIEvent y -> case fromMessage $ Msg.Channel y of
+    Just msg -> Right msg
+    Nothing -> Left $ "Could not convert channel event: " ++ show x
+  _ -> Left $ "Non channel event: " ++ show x
 
 -- toMessage :: PM.PMMsg -> Msg.T
 -- toMessage pmMsg = _
