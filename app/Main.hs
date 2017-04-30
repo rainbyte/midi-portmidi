@@ -2,7 +2,7 @@ module Main where
 
 import           Control.Concurrent
 import           Control.Monad
-import           Options.Applicative ((<>))
+import           Data.Monoid ((<>))
 import qualified Options.Applicative as Opt
 import qualified Sound.MIDI.File as MidiFile
 import qualified Sound.MIDI.File.Load as MidiFile.Load
