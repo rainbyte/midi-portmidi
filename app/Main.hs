@@ -34,7 +34,7 @@ main = do
   selectedId <- readLn :: IO Int
   eStream <- PM.openOutput selectedId 0
   case eStream of
-    Left stream -> do
+    Right stream -> do
       f <- MidiFile.Load.fromFile (filePath options)
       let (MidiFile.Cons midiType division tracks) = f
           tracks' = fmap (fromTrack division) tracks
@@ -53,8 +53,9 @@ main = do
                 waitQSem semStream
                 err <- PM.writeShort stream (PM.PMEvent (PM.encodeMsg msg) 0)
                 signalQSem semStream
-                when (err /= PM.NoError) $
-                  putStrLn $ "err = " ++ show err
+                case err of
+                  Right _    -> pure ()
+                  Left pmerr -> putStrLn $ "err = " ++ show pmerr
               Left str ->
                 putStrLn str
           count' <- takeMVar countVar
@@ -65,6 +66,6 @@ main = do
       _ <- PM.close stream
       _ <- PM.terminate
       exitSuccess
-    Right pmError -> do
+    Left pmError -> do
       _ <- error $ show pmError
       exitFailure
